@@ -55,7 +55,7 @@ yup.addMethod(yup.object, "basePathRequired", function () {
       return true;
     },
   });
-});
+}); // check if not needed
 // SchemaFileExists - Custom validation method to check if the provided schema file exists
 yup.addMethod(yup.string, "schemaFileExists", function (srcDir) {
   return this.test({
@@ -102,7 +102,7 @@ const endpointSchema = (srcDir) =>
           .required("Endpoint name is required.")
           .max(50, "Endpoint name must be less than 50 characters.")
           .matches(
-            /^[a-z0-9-]+$/,
+            /^[a-z0-9-]+$/, // cant start with a number
             "Endpoint name must only contain lowercase letters, digits, and hyphens."
           ),
         displayName: yup

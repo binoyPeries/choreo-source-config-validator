@@ -1,32 +1,25 @@
 const core = require("@actions/core");
 const fs = require("fs");
 const yaml = require("js-yaml");
+const path = require("path");
 const { componentYamlSchema } = require("./schemas");
 
-// sanitizeSrcRootPath - remove trailing slash from the path
-function sanitizeSrcRootPath(path) {
-  if (path.endsWith("/")) {
-    return path.slice(0, -1);
+function readInput() {
+  try {
+    sourceRootDir = core.getInput("source-root-dir-path");
+    return sourceRootDir;
+  } catch (error) {
+    throw new Error(`Failed to read input: ${error.message}`);
   }
-  return path;
 }
 
 function readComponentYaml(filePath) {
   try {
-    fullPath = `${filePath}/.choreo/component.yaml`;
+    fullPath = path.join(filePath, ".choreo", "component.yaml");
     let fileContent = fs.readFileSync(fullPath, "utf8");
     return fileContent;
   } catch (error) {
-    console.log(
-      "No component.yaml found, hence skipping the validation: ",
-      error.message
-    );
-    core.setOutput(
-      "No component.yaml found",
-      "No component.yaml found, hence skipping the validation"
-    );
-    // null is used to indicate that the file is not found
-    return null;
+    throw new Error(`Failed to read component.yaml: ${error.message}`);
   }
 }
 
@@ -40,32 +33,29 @@ function constructValidationErrorMessage(errors) {
   return `${errorMessage}: ${errorList}`;
 }
 
-// Main code
-let sourceRootDir = "";
-try {
-  sourceRootDir = core.getInput("source-root-dir-path");
-} catch (error) {
-  console.log("Failed to read input: ", error.message);
-  core.setFailed("Failed to read input", error.message);
+async function validateComponentYaml(sourceRootDir) {
+  try {
+    // Validate the component YAML file
+    await componentYamlSchema(sourceRootDir).validate(componentYamlFile, {
+      abortEarly: false,
+    });
+  } catch (err) {
+    throw new Error(constructValidationErrorMessage(err.errors));
+  }
 }
 
-try {
-  const sanitizedPath = sanitizeSrcRootPath(sourceRootDir);
-  fileContent = readComponentYaml(sanitizedPath);
-  if (fileContent !== null) {
+async function main() {
+  try {
+    const sourceRootDir = readInput();
+    const fileContent = readComponentYaml(sourceRootDir);
     // Parse the yaml content
     componentYamlFile = yaml.load(fileContent);
-    componentYamlSchema(sanitizedPath)
-      .validate(componentYamlFile, { abortEarly: false })
-      .then(() => {
-        core.setOutput("Component.yaml validation", "Successful");
-      })
-      .catch((err) => {
-        console.log(constructValidationErrorMessage(err.errors));
-        core.setFailed("Component.yaml validation failed", err.errors);
-      });
+    await validateComponentYaml(sourceRootDir);
+  } catch (error) {
+    console.log("component.yaml validation failed: ", error.message);
+    core.setFailed("component.yaml validation failed: ", error.message);
   }
-} catch (error) {
-  console.log("Failed to validate component.yaml: ", error.message);
-  core.setFailed("Failed to validate component.yaml", error.message);
 }
+
+// Exec the main function
+main();
