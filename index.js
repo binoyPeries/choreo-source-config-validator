@@ -5,6 +5,7 @@ const path = require("path");
 const {
   componentYamlSchemaV1D0,
   endpointYamlSchemaV0D1,
+  componentConfigYamlSchemaV1beta1,
 } = require("./schemas");
 
 const SourceConfigFileTypes = {
@@ -47,7 +48,7 @@ function readSrcConfigYaml(filePath, fileType) {
 
 function constructValidationErrorMessage(err, fileType) {
   const errors = err.errors;
-  if (errors.length == 0) {
+  if (!errors || errors.length == 0) {
     return `Failed to validate ${fileType}, something went wrong:` + err;
   }
   const errorMsg = `${fileType} validation failed: `;
@@ -66,16 +67,19 @@ async function validateSourceConfigFile(sourceRootDir, fileType) {
         );
         break;
       case SourceConfigFileTypes.COMPONENT_CONFIG_YAML:
-        return true;
-      // break;
+        await componentConfigYamlSchemaV1beta1(sourceRootDir).validate(
+          srcConfigYamlFile,
+          { abortEarly: false }
+        );
+        break;
       case SourceConfigFileTypes.ENDPOINT_YAML:
         await endpointYamlSchemaV0D1(sourceRootDir).validate(
           srcConfigYamlFile,
           { abortEarly: false }
         );
-      // break;
-      default:
         break;
+      default:
+        throw new Error(`'${fileType}' is not a valid source config file type`);
     }
     // Validate the component YAML file
   } catch (err) {
