@@ -10,8 +10,14 @@ const sourceConfigFileTypes = {
   ENDPOINT_YAML: "endpoints.yaml",
 };
 
+const errCodes = {
+  USER_ERROR: "USER ERROR",
+  INTERNAL_ERROR: "INTERNAL ERROR",
+};
+
 module.exports = {
   sourceConfigFileTypes,
+  errCodes,
 };
 
 
@@ -38251,7 +38257,7 @@ const {
   endpointYamlSchemaV0D1,
   componentConfigYamlSchemaV1beta1,
 } = __nccwpck_require__(1677);
-const { sourceConfigFileTypes } = __nccwpck_require__(5376);
+const { sourceConfigFileTypes, errCodes } = __nccwpck_require__(5376);
 
 function readInput() {
   sourceRootDir = core.getInput("source-root-dir-path");
@@ -38275,16 +38281,31 @@ function readSrcConfigYaml(filePath, fileType) {
     let fileContent = fs.readFileSync(fullPath, "utf8");
     return fileContent;
   } catch (error) {
-    throw new Error(`\nFailed to read source config file: ${error.message}`);
+    throw new Error(
+      `${errCodes.USER_ERROR} Failed to read source config file: ${error.message}`
+    );
+  }
+}
+
+function parseYaml(fileContent) {
+  try {
+    srcConfigYamlFile = yaml.load(fileContent);
+  } catch (error) {
+    throw new Error(
+      `${errCodes.USER_ERROR} Failed to parse yaml: ${error.message}`
+    );
   }
 }
 
 function constructValidationErrorMessage(err, fileType) {
   const errors = err.errors;
   if (!errors || errors.length == 0) {
-    return `Failed to validate ${fileType}, something went wrong:` + err;
+    return (
+      `${errCodes.INTERNAL_ERROR} Failed to validate ${fileType}, something went wrong:` +
+      err
+    );
   }
-  const errorMsg = `${fileType} validation failed: `;
+  const errorMsg = `${errCodes.USER_ERROR} ${fileType} validation failed: `;
   const errorList =
     errors.length === 1 ? errors[0] : errors.map((e) => `\n- ${e}`).join("");
   return errorMsg + errorList;
@@ -38324,12 +38345,11 @@ async function main() {
   try {
     const [sourceRootDir, fileType] = readInput();
     const fileContent = readSrcConfigYaml(sourceRootDir, fileType);
-    // Parse the yaml content
-    srcConfigYamlFile = yaml.load(fileContent);
+    srcConfigYamlFile = parseYaml(fileContent);
     await validateSourceConfigFile(sourceRootDir, fileType);
   } catch (error) {
-    console.log("Validation Error: ", error.message);
-    core.setFailed("Source config file validation failed ", error.message);
+    console.log(error.message);
+    core.setFailed("Source config file validation failed");
   }
 }
 

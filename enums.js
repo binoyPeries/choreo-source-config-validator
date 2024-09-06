@@ -4,6 +4,12 @@ const sourceConfigFileTypes = {
   ENDPOINT_YAML: "endpoints.yaml",
 };
 
+const errCodes = {
+  USER_ERROR: "USER ERROR",
+  INTERNAL_ERROR: "INTERNAL ERROR",
+};
+
 module.exports = {
   sourceConfigFileTypes,
+  errCodes,
 };
