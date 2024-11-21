@@ -71,12 +71,18 @@ async function validateSourceConfigFile(sourceRootDir, fileType) {
         );
         break;
       case sourceConfigFileTypes.COMPONENT_CONFIG_YAML:
+        core.warning(
+          "Warning: You are using an older version of the source configuration. Please update to the latest version to take advantage of new features. For details, refer to <Doc Link>. You can download the latest version from <Doc Link>."
+        );
         await componentConfigYamlSchemaV1beta1(sourceRootDir).validate(
           srcConfigYamlFile,
           { abortEarly: false }
         );
         break;
       case sourceConfigFileTypes.ENDPOINT_YAML:
+        core.warning(
+          "Warning: You are using an older version of the source configuration. Please update to the latest version to take advantage of new features. For details, refer to <Doc Link>. You can download the latest version from <Doc Link>."
+        );
         await endpointYamlSchemaV0D1(sourceRootDir).validate(
           srcConfigYamlFile,
           { abortEarly: false }
