@@ -10,6 +10,9 @@ const {
 } = require("./schemas");
 const { sourceConfigFileTypes, errCodes } = require("./enums");
 
+const olderSrcConfigMessage =
+  "Older Source Config Detected: You are using an older version of the source configuration. Please update to the latest version to take advantage of new features.";
+
 function readInput() {
   sourceRootDir = core.getInput("source-root-dir-path");
   fileType = core.getInput("file-type");
@@ -89,12 +92,14 @@ async function validateSourceConfigFile(sourceRootDir, fileType) {
         await validateComponentYaml(sourceRootDir, schemaVersion)
         break;
       case sourceConfigFileTypes.COMPONENT_CONFIG_YAML:
+        core.warning(olderSrcConfigMessage);
         await componentConfigYamlSchemaV1beta1(sourceRootDir).validate(
           srcConfigYamlFile,
           { abortEarly: false }
         );
         break;
       case sourceConfigFileTypes.ENDPOINT_YAML:
+        core.warning(olderSrcConfigMessage);
         await endpointYamlSchemaV0D1(sourceRootDir).validate(
           srcConfigYamlFile,
           { abortEarly: false }
