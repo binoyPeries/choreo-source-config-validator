@@ -31,6 +31,7 @@ const {
   validateConnectionReferenceResourceRef,
   validateConfigurations,
   validComponentYamlV1D1,
+  validateProjectVisibilityOnlyType,
 } = require("./component-yaml-samples.js");
 
 const testSrcDir = "test/";
@@ -76,7 +77,12 @@ async function validateComponentConfigSchema(yamlContent) {
     }
   );
 }
-async function expectValidationErrors(yamlType, yamlContent, expectedErrors, schemaVersion = ALLOWED_COMPONENT_YAML_VERSIONS[0]) {
+async function expectValidationErrors(
+  yamlType,
+  yamlContent,
+  expectedErrors,
+  schemaVersion = ALLOWED_COMPONENT_YAML_VERSIONS[0]
+) {
   try {
     switch (yamlType) {
       case COMPONENT_YAML:
@@ -154,7 +160,7 @@ describe("endpointYamlSchemaV0D1 schema tests", () => {
     );
   });
 
-  test(`should fail when context doesn't start with a forward slash and can only 
+  test(`should fail when context doesn't start with a forward slash and can only
     contain alphanumeric characters, hyphens, and forward slashes`, async () => {
     const expectedErrors = [
       "endpoints[1].context must start with a forward slash and can only contain alphanumeric characters, hyphens, and forward slashes.",
@@ -194,7 +200,10 @@ describe("endpointYamlSchemaV0D1 schema tests", () => {
 
 describe("componentYamlSchemaV1D0 schema tests", () => {
   test("should validate correctly with valid component.yaml", async () => {
-    const result = await validateComponentYamlSchema(validComponentYaml, ALLOWED_COMPONENT_YAML_VERSIONS[0]);
+    const result = await validateComponentYamlSchema(
+      validComponentYaml,
+      ALLOWED_COMPONENT_YAML_VERSIONS[0]
+    );
     expect(result).toBeDefined();
   });
   test("should fail when required fields (schemaVersion, endpoint name, type and port) are missing", async () => {
@@ -207,6 +216,19 @@ describe("componentYamlSchemaV1D0 schema tests", () => {
     await expectValidationErrors(
       COMPONENT_YAML,
       missingRequiredFieldsComponentYaml,
+      expectedErrors
+    );
+  });
+  test("should fail when UDP,TCP and GRPC have visibility other than project", async () => {
+    const expectedErrors = [
+      "endpoints[4].networkVisibilities is a type UDP endpoint and can only have networkVisibility as Project",
+      "endpoints[5].networkVisibilities is a type TCP endpoint and can only have networkVisibility as Project",
+      "endpoints[6].networkVisibilities is a type GRPC endpoint and can only have networkVisibility as Project",
+      "endpoints[7].networkVisibilities is a type UDP endpoint and can only have networkVisibility as Project",
+    ];
+    await expectValidationErrors(
+      COMPONENT_YAML,
+      validateProjectVisibilityOnlyType,
       expectedErrors
     );
   });
@@ -317,7 +339,7 @@ describe("componentYamlSchemaV1D0 schema tests", () => {
   });
 });
 
-// Tests for connection reference dependencies of componentYamlV1D1 
+// Tests for connection reference dependencies of componentYamlV1D1
 describe("dependencySchemaV0D2 schema tests", () => {
   test("should fail when connection reference name is not valid", async () => {
     const expectedErrors = [
@@ -347,7 +369,7 @@ describe("dependencySchemaV0D2 schema tests", () => {
       "dependencies.connectionReferences[18].resourceRef has an invalid service identifier. Use the format database:[<serverName>/]<databaseName> where optional fields are in brackets, allowing only alphanumeric characters, underscores (_), hyphens (-), and slashes (/) after database:.",
       "dependencies.connectionReferences[19].resourceRef has an invalid service identifier. Use the format database:[<serverName>/]<databaseName> where optional fields are in brackets, allowing only alphanumeric characters, underscores (_), hyphens (-), and slashes (/) after database:.",
       "dependencies.connectionReferences[20].resourceRef has an invalid service identifier. Use the format database:[<serverName>/]<databaseName> where optional fields are in brackets, allowing only alphanumeric characters, underscores (_), hyphens (-), and slashes (/) after database:.",
-      "dependencies.connectionReferences[21].resourceRef has an invalid service identifier. For services, use [service:][/<project-handle>/]<component-handle>/<major-version>[/<endpoint-handle>][/<network-visibility>]. For databases, use database:[<serverName>/]<databaseName>. For third-party services, use thirdparty:<service_name>/<version>. Optional fields are specified in brackets."
+      "dependencies.connectionReferences[21].resourceRef has an invalid service identifier. For services, use [service:][/<project-handle>/]<component-handle>/<major-version>[/<endpoint-handle>][/<network-visibility>]. For databases, use database:[<serverName>/]<databaseName>. For third-party services, use thirdparty:<service_name>/<version>. Optional fields are specified in brackets.",
     ];
     await expectValidationErrors(
       COMPONENT_YAML,
@@ -356,31 +378,30 @@ describe("dependencySchemaV0D2 schema tests", () => {
       ALLOWED_COMPONENT_YAML_VERSIONS[1]
     );
   });
-})
+});
 
-describe("componentYamlSchemaV1D1 schema tests", () => {
-  test("should validate correctly with valid component.yaml v1.1", async () => {
-    const result = await validateComponentYamlSchema(
-      validComponentYamlV1D1,
-      ALLOWED_COMPONENT_YAML_VERSIONS[1]
-    );
-    expect(result).toBeDefined();
-  });
-  test("should fail when configuration is not valid", async () => {
-    const expectedErrors = [
-      "configuration.env[0].valueFrom.connectionRef.key is a required field",
-      "One of value, connectionRef or configGroupRef must be provided",
-      "configuration.env[4].valueFrom.connectionRef.name is a required field",
-      "configuration.env[5].valueFrom.configGroupRef.key is a required field",
-      "One of value, connectionRef or configGroupRef must be provided",
-      "Environment variable name must start with a letter or underscore and can only contain letters, numbers, and underscores.",
-      "Environment variable names must be unique",
-    ];
-    await expectValidationErrors(
-      COMPONENT_YAML,
-      validateConfigurations,
-      expectedErrors,
-      ALLOWED_COMPONENT_YAML_VERSIONS[1]
-    );
-  });
+// describe("componentYamlSchemaV1D1 schema tests", () => {
+test("should validate correctly with valid component.yaml v1.1", async () => {
+  const result = await validateComponentYamlSchema(
+    validComponentYamlV1D1,
+    ALLOWED_COMPONENT_YAML_VERSIONS[1]
+  );
+  expect(result).toBeDefined();
+});
+test("should fail when configuration is not valid", async () => {
+  const expectedErrors = [
+    "configuration.env[0].valueFrom.connectionRef.key is a required field",
+    "One of value, connectionRef or configGroupRef must be provided",
+    "configuration.env[4].valueFrom.connectionRef.name is a required field",
+    "configuration.env[5].valueFrom.configGroupRef.key is a required field",
+    "One of value, connectionRef or configGroupRef must be provided",
+    "Environment variable name must start with a letter or underscore and can only contain letters, numbers, and underscores.",
+    "Environment variable names must be unique",
+  ];
+  await expectValidationErrors(
+    COMPONENT_YAML,
+    validateConfigurations,
+    expectedErrors,
+    ALLOWED_COMPONENT_YAML_VERSIONS[1]
+  );
 });

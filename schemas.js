@@ -9,6 +9,8 @@ const ALLOWED_NETWORK_VISIBILITIES = ["Public", "Project", "Organization"];
 const BASE_PATH_REQUIRED_TYPES = ["REST", "GraphQL", "WS"];
 const COMPONENT_CONFIG_YAML_API_VERSION = ["core.choreo.dev/v1beta1"];
 const COMPONENT_CONFIG_YAML_KIND = ["ComponentConfig"];
+const PROJECT_ONLY_TYPES = ["GRPC", "TCP", "UDP"];
+const PROJECT_VISIBILITY = "Project";
 const LATEST_COMPONENT_YAML_SCHEMA_VERSION = 1.1;
 
 // custom validators
@@ -56,7 +58,8 @@ yup.addMethod(yup.array, "checkEnvVariableUniqueness", function () {
         return true;
       });
       return (
-        isUnique || new yup.ValidationError("Environment variable names must be unique")
+        isUnique ||
+        new yup.ValidationError("Environment variable names must be unique")
       );
     },
   });
@@ -203,13 +206,38 @@ yup.addMethod(yup.string, "validateResourceRef", function () {
       return (
         // since "service:" is optional, we need to validate again with a generic error
         svcRefNameRegex.test(value) ||
-          new yup.ValidationError(
-            `${testCtx.path} has an invalid service identifier. ` +
-              `For services, use [service:][/<project-handle>/]<component-handle>/<major-version>[/<endpoint-handle>][/<network-visibility>]. ` +
-              `For databases, use database:[<serverName>/]<databaseName>. ` +
-              `For third-party services, use thirdparty:<service_name>/<version>. ` +
-              `Optional fields are specified in brackets.`
-      ));
+        new yup.ValidationError(
+          `${testCtx.path} has an invalid service identifier. ` +
+            `For services, use [service:][/<project-handle>/]<component-handle>/<major-version>[/<endpoint-handle>][/<network-visibility>]. ` +
+            `For databases, use database:[<serverName>/]<databaseName>. ` +
+            `For third-party services, use thirdparty:<service_name>/<version>. ` +
+            `Optional fields are specified in brackets.`
+        )
+      );
+    },
+  });
+});
+
+// projectVisibilityOnly - Custom validation method to check if for types GRPC, TCP, and UDP, networkVisibility can only be project
+yup.addMethod(yup.array, "projectVisibilityOnly", function () {
+  return this.test({
+    name: "project-visibility-only",
+    test: (visibility, testCtx) => {
+      const { type } = testCtx.parent;
+      console.log(type);
+      console.log(visibility);
+      const isVisibilityProjectOnly = visibility?.length === 1 && visibility[0] === PROJECT_VISIBILITY;
+      const isTypeProjectOnly = PROJECT_ONLY_TYPES.includes(type);
+      console.log("isTypeProjectOnly", isTypeProjectOnly);
+      console.log("isVisibilityProjectOnly", isVisibilityProjectOnly);
+      if (isTypeProjectOnly && !isVisibilityProjectOnly) {
+        // Extract "endpoints[x]" from "endpoints[x].networkVisibilities"
+        erroredEndpoint = testCtx.path.split(".")[0] || "endpoint";
+        return new yup.ValidationError(
+          `The ${erroredEndpoint} is a type ${type} endpoint and can only have networkVisibility set to ${PROJECT_VISIBILITY}`
+        );
+      }
+      return true;
     },
   });
 });
@@ -229,7 +257,7 @@ const serviceSchema = yup
       ),
     port: yup.number().required().moreThan(1000).lessThan(65535),
   })
-  .required()
+  .required();
 
 // endpointSchemaV0D1 - Schema for endpoint definition V0.1
 const endpointSchemaV0D1 = (srcDir) =>
@@ -271,7 +299,8 @@ const endpointSchemaV0D2 = (srcDir) =>
         type: yup.string().required().oneOf(ALLOWED_TYPES),
         networkVisibilities: yup
           .array()
-          .of(yup.string().oneOf(ALLOWED_NETWORK_VISIBILITIES)),
+          .of(yup.string().oneOf(ALLOWED_NETWORK_VISIBILITIES))
+          .projectVisibilityOnly(),
         schemaFilePath: yup.string().schemaFileExists(srcDir),
       })
     )
@@ -363,7 +392,7 @@ const componentYamlSchemaV1D0 = (srcDir) =>
     schemaVersion: yup
       .number()
       .required()
-      .oneOf([1.0], 'Schema version must be 1.0'),
+      .oneOf([1.0], "Schema version must be 1.0"),
     endpoints: endpointSchemaV0D2(srcDir),
     dependencies: dependencySchemaV0D1,
   });
@@ -374,7 +403,7 @@ const componentYamlSchemaV1D1 = (srcDir) =>
     schemaVersion: yup
       .number()
       .required()
-      .oneOf([1.1], 'Schema version must be 1.1'),
+      .oneOf([1.1], "Schema version must be 1.1"),
     endpoints: endpointSchemaV0D2(srcDir),
     dependencies: dependencySchemaV0D2,
     configuration: configurationSchema,
@@ -403,5 +432,5 @@ module.exports = {
   componentYamlSchemaV1D0,
   endpointYamlSchemaV0D1,
   componentConfigYamlSchemaV1beta1,
-  LATEST_COMPONENT_YAML_SCHEMA_VERSION
+  LATEST_COMPONENT_YAML_SCHEMA_VERSION,
 };

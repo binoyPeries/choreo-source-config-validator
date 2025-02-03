@@ -65,32 +65,103 @@ endpoints:
     service:
       basePath: /greeting-service
       port: 9090
-    type: UDP
+    type: REST
   - name: valid-string-123
     displayName: Go Greeter Sample
     service:
       basePath: /greeting-service
       port: 9090
-    type: UDP
+    type: REST
   - name: InvalidString
     displayName: Go Greeter Sample
     service:
       basePath: /greeting-service
       port: 9090
-    type: UDP
+    type: REST
   - name: 1invalid-start
     displayName: Go Greeter Sample
     service:
       basePath: /greeting-service
       port: 9090
     type: UDP
+    networkVisibilities:
+      - Project
   - name:  greeter-sample
     displayName: Go Greeter Sample
     service:
       basePath: /greeting-service
       port: 9090
-    type: UDP
+    type: REST
   - name:  a1234567890_valid_string_example_with_numbers_1234567
+    displayName: Go Greeter Sample
+    service:
+      basePath: /greeting-service
+      port: 9090
+    type: REST`;
+  
+
+const validateProjectVisibilityOnlyType = `schemaVersion: 1.0
+endpoints:
+  - name: greeter-sample
+    displayName: Go Greeter Sample
+    service:
+      basePath: /greeting-service
+      port: 9090
+    type: UDP
+    networkVisibilities:
+      - Project
+  - name: greeter-sample2
+    displayName: Go Greeter Sample
+    service:
+      basePath: /greeting-service
+      port: 9090
+    type: TCP
+    networkVisibilities:
+      - Project
+  - name: greeter-sample3
+    displayName: Go Greeter Sample
+    service:
+      basePath: /greeting-service
+      port: 9090
+    type: GRPC
+    networkVisibilities:
+      - Project
+  - name: greeter-sample4
+    displayName: Go Greeter Sample
+    service:
+      basePath: /greeting-service
+      port: 9090
+    type: REST
+    networkVisibilities:
+      - Public
+      - Organization
+  - name: greeter-sample5
+    displayName: Go Greeter Sample
+    service:
+      basePath: /greeting-service
+      port: 9090
+    type: UDP
+    networkVisibilities:
+      - Public
+  - name: greeter-sample6
+    displayName: Go Greeter Sample
+    service:
+      basePath: /greeting-service
+      port: 9090
+    type: TCP
+    networkVisibilities:
+      - Organization
+  - name: greeter-sample7
+    displayName: Go Greeter Sample
+    service:
+      basePath: /greeting-service
+      port: 9090
+    type: GRPC
+    networkVisibilities:
+      - Public
+      - Organization
+      - Project
+  - name: greeter-sample8
     displayName: Go Greeter Sample
     service:
       basePath: /greeting-service
@@ -104,19 +175,19 @@ endpoints:
       service:
         basePath: /greeting-service
         port: 9090
-      type: UDP
+      type: REST
     - name: greeter-sample2
       displayName: short_string_with_symbols!@#$%^&*()_+{}|:"<>?
       service:
         basePath: /greeting-service
         port: 9090
-      type: UDP
+      type: REST
     - name: greeter-sample3
       displayName: This string is way too long because it has more than fifty characters in total.
       service:
         basePath: /greeting-service
         port: 9090
-      type: UDP`;
+      type: REST`;
 const validateServiceSchema = `schemaVersion: 1.0
 endpoints:
     - name: greeter-sample
@@ -125,18 +196,20 @@ endpoints:
         basePath: /a-valid-path-123/to-resource
         port: 909
       type: UDP
+      networkVisibilities:
+        - Project
     - name: greeter-sample2
       displayName: greeter sample
       service:
         basePath:  invalid/path/without/leading-slash
         port: 75000
-      type: UDP
+      type: REST
     - name: greeter-sample3
       displayName: greeter sample
       service:
         basePath:  /invalid_path_with_special&chars
         port: 9090
-      type: UDP`;
+      type: GraphQL`;
 
 const validateTypeField = `schemaVersion: 1.0
 endpoints:
@@ -144,6 +217,8 @@ endpoints:
       service:
         port: 9090
       type: GRPC
+      networkVisibilities:
+        - Project
     - name: greeter-sample2
       service:
         port: 9090
@@ -163,10 +238,14 @@ endpoints:
       service:
         port: 9090
       type: TCP
+      networkVisibilities:
+        - Project
     - name: greeter-sample6
       service:
         port: 9090
       type: UDP
+      networkVisibilities:
+        - Project
     - name: greeter-sample7
       service:
         port: 9090
@@ -177,7 +256,7 @@ endpoints:
     - name: greeter-sample
       service:
         port: 9090
-      type: GRPC
+      type: REST
       networkVisibilities: 
         - Public
     - name: greeter-sample2
@@ -205,21 +284,21 @@ endpoints:
     - name: greeter-sample5
       service:
         port: 9090
-      type: TCP
+      type: REST
       networkVisibilities: 
         - Project
         - Organization
     - name: greeter-sample6
       service:
         port: 9090
-      type: UDP
+      type: REST
       networkVisibilities: 
         - Public
         - Project
     - name: greeter-sample7
       service:
         port: 9090
-      type: UDP
+      type: REST
       networkVisibilities: 
         - Public
         - Organization
@@ -227,7 +306,7 @@ endpoints:
     - name: greeter-sample8
       service:
         port: 9090
-      type: UDP
+      type: REST
       networkVisibilities: 
         - Public
         - Private`;
@@ -351,7 +430,7 @@ dependencies:
       - name: Valid Connection Name 
         resourceRef: service:/mttm/mmvhxd/v1.1/ad088/PUBLIC
       - name: Invalid Connection Name_ 
-        resourceRef: service:/mttm/mmvhxd/v1.1/ad088/PUBLIC`
+        resourceRef: service:/mttm/mmvhxd/v1.1/ad088/PUBLIC`;
 
 const validateConnectionReferenceResourceRef = `schemaVersion: 1.1
 dependencies:
@@ -399,7 +478,7 @@ dependencies:
       - name: valid_connection_name1
         resourceRef: database:/mySqlDbServer/hotelDb
       - name: valid_connection_name1
-        resourceRef: THIRDPARTY:mySqlDbServer/hotelDb/invalid`
+        resourceRef: THIRDPARTY:mySqlDbServer/hotelDb/invalid`;
 
 const validateConfigurations = `schemaVersion: 1.1
 configuration:
@@ -432,7 +511,7 @@ configuration:
           name: hello-conn
     - name: CUSTOM_VAR
     - name: INVALID VAR
-      value: custom-value`
+      value: custom-value`;
 
 module.exports = {
   validComponentYaml,
@@ -450,4 +529,5 @@ module.exports = {
   validateConnectionReferenceResourceRef,
   validateConfigurations,
   validComponentYamlV1D1,
+  validateProjectVisibilityOnlyType,
 };
